@@ -3,7 +3,7 @@ import csv
 import os       
 import datetime 
 
-conn= sqlite3.connect('inventry.db') 
+conn= sqlite3.connect('inventory.db') 
 c=conn.cursor()                    
 def display_title_bar():           
                          
@@ -25,12 +25,14 @@ def get_user_choice():
     print("[5] Checkin")
     print("[6] Item View")
     print("[7] Search")
+    print("[8] Asset Value")
+    print("[9] Print")
+   
+    
     print("[q] Quit.")
 
-    user_input = input("What would you like to do? ")
+   user_input = input("What would you like to do? ")
     return int(user_input) if user_input.isdigit() else user_input
-    
-
 
 def create_table():
     c.execute("CREATE TABLE IF NOT EXISTS stuff(iid REAL ,name TEXT,description TEXT,total_amt REAL,cost REAL,dateadd DATETIME,status TEXT)")
@@ -99,17 +101,28 @@ def search():
     for row in c.fetchall():
        
         print(row)
+def assetvalue():
+    c.execute("SELECT SUM(cost*total_amt) FROM stuff ")
+    conn.commit()
+    print(":Asset Value :")
+    for row in c.fetchall():
+        print (row)
+    
 
-
-            
-          
-choice = ''
+    
+             
+def prnt(data):
+    f=open('gist.csv')
+    with f:
+        f.write(data)
+   
+choice =''
 display_title_bar()   
 while choice != 'q':    
     
     choice = get_user_choice()
     
-    
+      
     display_title_bar()
     if choice == 1:
          add_item()
@@ -125,7 +138,12 @@ while choice != 'q':
          item_view()   
     elif choice == 7:
         search()
-  
+    elif choice == 8:
+        assetvalue ()
+    elif choice == 9:
+        prnt()
+   
+    
     elif choice == 'q':
         print("\n Have a nice day :)")
     else:
