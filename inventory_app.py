@@ -24,8 +24,7 @@ Options:
 import sys, os
 import cmd
 from docopt import docopt, DocoptExit
-from inventoy_final import add_item, remove_item, item_list, checkout, checkin, item_log,item_value, search,value_by_category,total_assets
-from inventory_final import display_title_bar
+from inventory_final import add_item, remove_item, item_list, checkout, checkin, item_log,item_value, search,value_by_category,total_assets
 
 
 def docopt_cmd(func):
