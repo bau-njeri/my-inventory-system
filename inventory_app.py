@@ -1,167 +1,141 @@
-import sqlite3   
-import csv      
-import os       
-import datetime 
-from tabulate import tabulate
-from termcolor import colored, cprint
-from colorama import init
+"""
+Usage:
+    inv_app add_item         
+    inv_app remove_item 
+    inv_app list_items
+    inv_app checkout 
+    inv_app checkin 
+    inv_app item_log 
+    inv_app search
+    inv_app total_assets 
+    inv_app value_by_category
+    inv_app item_value
+    inv_app list_items [--export=<filename>]
+    inv_app quit
+    inv_app (-i | --interactive)
+    inv_app (-h | --help)
+    
+Options:
+    -i, --interactive  Interactive Mode
+    -h, --help  Show this screen and exit. 
+    --export=<filename>  Export filename
+"""
 
-init()
+import sys, os
+import cmd
+from docopt import docopt, DocoptExit
+from inventoy_final import add_item, remove_item, item_list, checkout, checkin, item_log,item_value, search,value_by_category,total_assets
+from inventory_final import display_title_bar
 
 
+def docopt_cmd(func):
+    """
+    This decorator is used to simplify the try/except block and pass the result
+    of the docopt parsing to the called action.
+    """
+    def fn(self, arg):
+        try:
+            opt = docopt(fn.__doc__, arg)
 
-conn= sqlite3.connect('inventry.db') 
-c=conn.cursor()                     
-def display_title_bar():           
-                        
-    os.system('cls')               
-              
+        except DocoptExit as e:
+            # The DocoptExit is thrown when the args do not match.
+            # We print a message to the user and the usage block.
+
+            print('Invalid Command!')
+            print(e)
+            return
+
+        except SystemExit:
+            # The SystemExit exception prints the usage for --help
+            # We do not need to do the print here.
+
+            return
+
+        return func(self, opt)
+
+    fn.__name__ = func.__name__
+    fn.__doc__ = func.__doc__
+    fn.__dict__.update(func.__dict__)
+    return fn
+
+
+def  display_title_bar():
+    os.system("cls")
     print("\t**********************************************")  
     print("\t---------        Welcome To        -----------")
     print("\t---     Inventory management system        ---")
-    print("\t**********************************************")
+    print("\t**********************************************") 
 
 
 
-def get_user_choice():         
+
+class Inventory(cmd.Cmd):
+    intro = display_title_bar()
+    prompt = 'IMS>>>'
+    file = None
+
+    @docopt_cmd
+    def do_add_item(self, arg):
+        """Usage: add_item"""
+        add_item()
     
-    print("[1] Add New Item.") 
-    print("[2] Delete Item.")
-    print("[3] Item List.")
-    print("[4] Checkout")
-    print("[5] Checkin")
-    print("[6] Item View")
-    print("[7] Search")
-    print("[q] Quit.")
-
-    user_input = input("What would you like to do? ")
-    return int(user_input) if user_input.isdigit() else user_input
-    # return user_input
-    
-
-
-def create_table():
-    c.execute("CREATE TABLE IF NOT EXISTS stuff(iid REAL not NULL, name TEXT not NULL, description TEXT not NULL, total_amt REAL ,cost REAL,dateadd DATETIME,status TEXT)")
-    c.execute("CREATE TABLE IF NOT EXISTS stats(iid REAL ,name TEXT,cost REAL,dateadd DATE,status TEXT)")
-
-def add_item():
-    print("Please Enter the following")
-    iid        =input ('ID:')
-    name       =input ('Item Name: ')
-    description=input ('Item Descrpition: ')
-    total_amt  =input ('Total Amout: ')
-    cost       =input ('Item Cost: ')
-    dateadd    =datetime.datetime.now()
-    status     =input ('Status:')
-    c.execute("INSERT INTO stuff  VALUES (?,?,?,?,?,?,?);",  
-              (iid,name,description,total_amt,cost,dateadd,status))
-    conn.commit()
-    print("Item been added")
-    
-def remove_item():
-    c.execute("SELECT iid,name,description FROM stuff ") 
-    for row in c.fetchall():
-        print (row)
-    value=input('Id of Item to Delete:')
-    c.execute("DELETE FROM stuff WHERE name=?;",(value))
-    conn.commit()
-    print("Item has been deleted")
-
-def item_list():
-    c.execute("SELECT iid,name,status FROM stuff")
-    all_items = []
-    for row in c.fetchall():
-        item_details = []
-        item_details.append(row[0])
-        item_details.append(row[1])
-        item_details.append(row[2])
-        all_items.append(item_details)
-    headers = ["Id", "Name","Status"]
-    print(colored(tabulate(all_items, headers, tablefmt="grid"),'green'))
-
-def checkout():
-    c.execute("SELECT iid,name FROM stuff WHERE status='in'")
-    for row in c.fetchall():
-        print (row)
-    value=input("Enter Item ID: ")
-    c.execute("UPDATE stuff SET status = 'out' WHERE name=?;",(value,))    
-    conn.commit()
-    c.execute("INSERT INTO stats (iid  ,name ,cost ,dateadd ,status ) SELECT iid  ,name ,cost ,dateadd ,status FROM stuff WHERE iid=?;",(value,))     
-    conn.commit()
-    
-def checkin():
-    c.execute("SELECT iid,name FROM stuff WHERE status='out'")
-    for row in c.fetchall():
-        print (row)
-    value=input("Enter Item ID: ")
-    c.execute("UPDATE stuff SET status = 'in' WHERE name=?;",(value,))
-    conn.commit()
-    c.execute("INSERT INTO stats (iid  ,name ,cost ,dateadd ,status ) SELECT iid  ,name ,cost ,dateadd ,status FROM stuff WHERE iid=?;",(value,))        
-    conn.commit()        
-    
-def item_view():
-    value=input('id:')
-    c.execute("SELECT iid,name ,status,dateadd FROM stats  WHERE name=?;",(value,))
-    conn.commit()
-    print("Your Item ")
-    for rows in c.fetchall():
-        print(rows)
-
-def search():
-    value=input('Name of item:')
-    c.execute("SELECT * FROM stuff WHERE name=?;",(value,))
-    conn.commit()
-    print("Found items ")
-    for row in c.fetchall():
-       
-        print(row)
-
-def assetvalue():
-    c.execute("SELECT SUM (cost*total_amt)FROM STUFF")
-    conn.commit()
-    print(":Assert Value")
-    for row in c.fetchall():
-        print(row)
-
-def itemvaluecategory():
-   value=input ("descreption of item:")
-   c.execute("SELECT SUM (cost*")        
-
-
-
-            
-#   choice = ''
+    @docopt_cmd
+    def do_remove_item(self, arg):
+        """Usage: remove_item """
+        remove_item()
         
-# display_title_bar()   
-# while choice != 'q':    
-    
-#     choice = get_user_choice()
-    
-    
-#     # display_title_bar()
-#     if choice == 1:
-#          add_item()
-#     elif choice == 2:
-#          dele()
-#     elif choice == 3:
-#          item_list()
-#     elif choice == 4:
-#          checkout()
-#     elif choice == 5:
-#          checkin()
-#     elif choice == 6:
-#          item_view()   
-#     elif choice == 7:
-#         search()
-  
-#     elif choice == 'q':
-#         print("\n Have a nice day :)")
-#     else:
-#         print("\n Please select a value from the menu .\n")            
-    
-    
-            
+    @docopt_cmd
+    def do_checkout(self, arg):
+       """"Usage: checkout """
+       checkout()
 
-create_table()
+    @docopt_cmd
+    def do_checkin(self, arg):
+       """Usage:checkin """
+       checkin()
+
+    @docopt_cmd
+    def do_item_log(self, arg):
+       """Usage: item_log """
+       item_log()
+
+    @docopt_cmd
+    def do_search(self, arg):
+       """Usage: search """
+       search()
+             
+    @docopt_cmd
+    def do_total_assets(self,arg):
+        """Usage: total_assets"""
+        total_assets()
+
+    @docopt_cmd
+    def do_value_by_category(self,arg):
+        """Usage: item_value_category"""
+        value_by_category()
+
+    @docopt_cmd
+    def do_item_value(self,arg):
+        """Usage: item_value"""
+        item_value()   
+        
+    @docopt_cmd
+    def do_list_items(self, arg):
+        """Usage: list_items [--export=<filename>]"""
+        item_list()
+
+    def do_quit(self, arg):
+        """Quits out of Interactive Mode."""
+
+        print('Good Bye!')
+        exit()
 
 
+opt = docopt(__doc__, sys.argv[1:])
+
+if opt['--interactive']:
+    try:
+        print(__doc__)
+        Inventory().cmdloop()
+    except KeyboardInterrupt:
+        print("Exiting App")
